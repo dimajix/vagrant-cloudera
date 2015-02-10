@@ -1,0 +1,6 @@
+.vagrant/
+provision/puppet/.librarian/
+provision/puppet/.tmp/
+provision/puppet/Puppetfile.lock
+
+

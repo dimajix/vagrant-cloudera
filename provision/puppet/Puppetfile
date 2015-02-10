@@ -1,0 +1,6 @@
+# Puppetfile
+# Configuration for librarian-puppet. For example:
+#
+forge "https://forgeapi.puppetlabs.com"
+mod "razorsedge/cloudera"
+

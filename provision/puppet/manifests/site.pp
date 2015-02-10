@@ -6,6 +6,16 @@ package {ruby:ensure=> [latest,installed]}
 
 # Modify global settings
 
+class { '::cloudera::cdh5::repo':
+  version     => '5.3.1',
+}
+class { '::cloudera::cm5::repo':
+  version     => '5.3.1',
+}
+class { '::cloudera::impala::repo':
+  version     => '5.3.1',
+}
+
 class{ "hadoop":
   hdfs_hostname => 'cmserver',
   yarn_hostname => 'cmserver',
@@ -20,14 +30,6 @@ class{ "hadoop":
 
 
 node 'cmserver' {
-    class { '::cloudera':
-      cm_version     => '5.3.1',
-      cdh_version    => '5.3.1',
-      cm_server_host => 'cmserver',
-      use_parcels    => false,
-      # install_cmserver => true,
-      install_lzo    => true,
-    }
 
   # HDFS
   include hadoop::namenode

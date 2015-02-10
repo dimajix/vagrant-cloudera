@@ -3,4 +3,5 @@
 #
 forge "https://forgeapi.puppetlabs.com"
 mod "razorsedge/cloudera"
+mod "kupferk/hadoop"
 

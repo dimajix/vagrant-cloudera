@@ -5,29 +5,41 @@ package {puppet:ensure=> [latest,installed]}
 package {ruby:ensure=> [latest,installed]}
 
 # Modify global settings
-class { '::cloudera':
-  cm_server_host => 'smhost.localdomain',
-  install_lzo    => true,
-}
 
-class { '::cloudera::repo':
-  cdh_version => '5.3.1',
-  cm_version  => '5.3.1',
-}
-
-
-
-node 'cmserver' {
-  class { '::cloudera':
-    install_cmserver => true,
+class{ "hadoop":
+  hdfs_hostname => 'cmserver',
+  yarn_hostname => 'cmserver',
+  slaves => [ 'cmserver' ],
+  frontends => [ 'cmserver' ],
+  # security needs to be disabled explicitly by using empty string
+  realm => '',
+  properties => {
+    'dfs.replication' => 1,
   }
 }
 
-node /supervisor[1-9]/ {
-  class { 'storm::supervisor': }
-}
 
-node /zookeeper[1-9]/ {
-  class { 'zookeeper': hostnames => [ $::fqdn ],  realm => '' }
+node 'cmserver' {
+    class { '::cloudera':
+      cm_version     => '5.3.1',
+      cdh_version    => '5.3.1',
+      cm_server_host => 'cmserver',
+      use_parcels    => false,
+      # install_cmserver => true,
+      install_lzo    => true,
+    }
+
+  # HDFS
+  include hadoop::namenode
+  # YARN
+  include hadoop::resourcemanager
+  # MAPRED
+  include hadoop::historyserver
+  # slave (HDFS)
+  include hadoop::datanode
+  # slave (YARN)
+  include hadoop::nodemanager
+  # client
+  include hadoop::frontend
 }
 

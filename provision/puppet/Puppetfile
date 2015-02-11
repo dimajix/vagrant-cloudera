@@ -2,6 +2,7 @@
 # Configuration for librarian-puppet. For example:
 #
 forge "https://forgeapi.puppetlabs.com"
+mod "puppetlabs/stdlib"
 mod "puppetlabs/java"
 mod "razorsedge/cloudera"
 mod "kupferk/hadoop"

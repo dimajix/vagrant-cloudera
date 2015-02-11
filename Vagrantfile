@@ -6,10 +6,10 @@
 #       vagrant-hostmanager
 
 boxes = [
-  { :name => :cmserver, :ip => '10.110.55.40', :cpus =>2, :memory => 512, :instance => 'm1.small' },
-  #{ :name => :supervisor1, :ip => '10.110.55.41', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
-  #{ :name => :supervisor2, :ip => '10.110.55.42', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
-  #{ :name => :zookeeper1, :ip => '10.110.55.46', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
+  { :name => :namenode, :ip => '10.110.55.40', :cpus =>2, :memory => 512, :instance => 'm1.small' },
+  { :name => :datanode1, :ip => '10.110.55.41', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
+  { :name => :datanode2, :ip => '10.110.55.42', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
+  { :name => :client, :ip => '10.110.55.46', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
 ]
 
 
@@ -26,7 +26,7 @@ Vagrant.configure("2") do |config|
 
   boxes.each do |opts|
   	config.vm.define opts[:name] do |node|
-      node.vm.hostname = opts[:name].to_s
+      node.vm.hostname = "%s.localcluster" % opts[:name].to_s
   	  node.vm.box = "trusty64"
       node.vm.box_url = "http://files.vagrantup.com/trusty64.box"
       

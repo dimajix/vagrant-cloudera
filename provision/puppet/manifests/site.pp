@@ -4,24 +4,28 @@
 package {puppet:ensure=> [latest,installed]}
 package {ruby:ensure=> [latest,installed]}
 
+
 # Configure Cloudera repositories
+stage { 'repo_init':
+  before => Stage['main'],  
+}
 class { '::cloudera::cdh5::repo':
-  version     => '5.3.1',
+  version   => '5.3.1',
+  stage => repo_init
 }
 class { '::cloudera::cm5::repo':
-  version     => '5.3.1',
+  version   => '5.3.1',
+  stage => repo_init
 }
 
-
-# Update apt cache
-#class { '::apt::update':
-#  require => ['::cloudera::cdh5::repo' ,'::cloudera::cm5::repo']
-#}
 
 # Make sure Java is installed on hosts, select specific version
 class { 'java':
     distribution => 'jre'
-} ->
+} 
+Class['java'] -> Class['hadoop::common::install']
+
+
 # Modify global settings
 class{ "hadoop":
   hdfs_hostname => 'namenode.localcluster',
@@ -33,7 +37,7 @@ class{ "hadoop":
   realm => '',
   properties => {
     'dfs.replication' => 1,
-  }, 
+  } 
 }
 
 

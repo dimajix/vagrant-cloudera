@@ -15,6 +15,38 @@ For best results, you should also install the Vagrant plugin `vagrant-hostmanage
     
 This neat plugin will make sure that every nodein your cluster gets a `hosts` file containing all other nodes of your Vagrant virtual cluster. This way you do not need to have any DNS bindings for your hosts, and you can simply rely on a DHCP server for assigning IP addresses.
 
+# Starting
+
+In order to start the cluster, simply go into the root directory and run
+
+    vagrant up
+    
+This will bring up all nodes. Sometimes some provisioning errors might occur during startup. They mostly come by some race conditions of the parallel startup. In most cases, you can simply rerun the provisioning with `vagrant provision <node>` for a specific node.
+
+# Available machines
+
+The following virtual machines will be provided:
+
+    namenode.localcluster  - Hadoop Namenode, Historytracker, YARN Resourcemanager
+    datanode1.localcluster - Hadoop Datanode, YARN Nodemanager
+    datanode2.localcluster - Hadoop Datanode, YARN Nodemanager
+    client.localcluster    - Client machine which should be used to access all services
+    
+You can ssh into any of the machines using `vagrant` by typing
+
+    vagrant ssh <nodename>
+    
+where `nodename` is one of `namenode`, `datanode1`, `datanode2`, `mysql` or `client` 
+    
+
+# Web Access to Hadoop
+
+Hadoop will make some web interfaces available to the host machine.
+
+    http://namenode.localcluster:50070
+    http://datanode1.localcluster:50075/
+    http://datanode2.localcluster:50075/
+
 # Issues
 
 The Cloudera Puppet module wants to change the kernel settings for transparent hugepages. This might now be possible in some virtual environment (most notably with LXC). In this case, you need to change the setting in the host environment

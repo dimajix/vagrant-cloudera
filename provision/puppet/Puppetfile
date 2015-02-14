@@ -6,4 +6,5 @@ mod "puppetlabs/stdlib"
 mod "puppetlabs/java"
 mod "razorsedge/cloudera"
 mod "kupferk/hadoop"
+mod "kupferk/osfixes"
 

@@ -17,13 +17,8 @@ class { '::cloudera::cm5::repo':
   version   => '5.3.1',
   stage => repo_init
 }
-
-# Fix Ubuntu crap
-file_line { 'ubuntu broken host entry':
-  ensure => present,
-  match  => '^127\.0\.1\.1.*',
-  line   => '127.0.1.1 ubuntu-localhost',
-  path   => '/etc/hosts',
+class { '::osfixes::ubuntu::hosts':
+  stage => init
 }
 
 
@@ -50,8 +45,6 @@ class{ "hadoop":
 
 
 node 'namenode' {
-  # Format
-  #include hadoop::format
   # HDFS
   include hadoop::namenode
   # YARN

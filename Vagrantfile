@@ -9,7 +9,11 @@ boxes = [
   { :name => :namenode, :ip => '10.110.55.40', :cpus =>2, :memory => 512, :instance => 'm1.small' },
   { :name => :datanode1, :ip => '10.110.55.41', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
   { :name => :datanode2, :ip => '10.110.55.42', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
+  { :name => :hbasenode, :ip => '10.110.55.45', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
+  { :name => :hivenode, :ip => '10.110.55.46', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
   { :name => :client, :ip => '10.110.55.46', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
+  { :name => :mysql, :ip => '10.110.55.50', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
+  { :name => :zookeeper1, :ip => '10.110.55.60', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
 ]
 
 

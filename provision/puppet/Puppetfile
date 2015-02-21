@@ -4,7 +4,12 @@
 forge "https://forgeapi.puppetlabs.com"
 mod "puppetlabs/stdlib"
 mod "puppetlabs/java"
+mod "puppetlabs/mysql", "2.3.1"
 mod "razorsedge/cloudera"
-mod "kupferk/hadoop"
+mod "stankevich/python"
+mod "cesnet/hadoop"
+mod "cesnet/hbase"
+mod "cesnet/hive"
+mod "cesnet/zookeeper"
 mod "kupferk/osfixes"
 

@@ -132,6 +132,16 @@ class impala_config {
 }
 
 
+class spark_config {
+    include hadoop_config
+    
+    class { "spark": 
+      master_hostname => "sparknode.${domain}",
+      workers => [ "datanode1.${domain}", "datanode2.${domain}" ]
+    }
+}
+
+
 node 'namenode' {
   include hadoop_config
   # HDFS
@@ -141,6 +151,7 @@ node 'namenode' {
   # MAPRED
   include hadoop::historyserver
 }
+
 
 node 'hivenode' {
   include hive_config
@@ -165,6 +176,7 @@ node 'hivenode' {
   Class['impala::statestore']
 }
 
+
 node 'hbasenode' {
   include hbase_config
   include hadoop_config
@@ -184,11 +196,24 @@ node 'hbasenode' {
   Class['hbase::restserver']
 }
 
+
+node 'sparknode' {
+  include hadoop_config
+  include spark_config
+  # Spark master
+  include spark::master
+
+  Class['hadoop::common::config'] -> 
+  Class['spark::master']
+}
+
+
 node 'client' {
   include hive_config
   include hbase_config
   include hadoop_config
   include impala_config
+  include spark_config
 
   # client
   include hadoop::frontend
@@ -201,12 +226,16 @@ node 'client' {
   include mysql::client
   # Impala client
   include impala::frontend
+  # Spark client
+  include spark::frontend
 }
+
 
 node /datanode[1-9]/ {
   include hadoop_config
   include hbase_config
   include impala_config
+  include spark_config
 
   # slave (HDFS)
   include hadoop::datanode
@@ -216,17 +245,22 @@ node /datanode[1-9]/ {
   include hbase::regionserver
   # Impala server
   include impala::server
+  # Spark worker
+  include spark::worker
 
   Class['hadoop::common::config'] -> 
   Class['hadoop::datanode'] ->
   Class['hadoop::nodemanager'] ->
   Class['hbase::regionserver'] ->
+  Class['spark::worker'] ->
   Class['impala::server']
 }
+
 
 node /zookeeper[1-9]/ {
   class { 'zookeeper': hostnames => [ $::fqdn ],  realm => '' }
 }
+
 
 node mysql {
   include hive_config

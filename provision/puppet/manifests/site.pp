@@ -10,11 +10,11 @@ stage { 'init':
   before => Stage['main'],  
 }
 class { '::cloudera::cdh5::repo':
-  version   => '5.3.1',
+  version   => '5.3.2',
   stage => init
 }
 class { '::cloudera::cm5::repo':
-  version   => '5.3.1',
+  version   => '5.3.2',
   stage => init
 }
 class { '::osfixes::ubuntu::hosts':

@@ -13,4 +13,5 @@ mod "cesnet/hive"
 mod "cesnet/zookeeper"
 mod "dimajix/osfixes"
 mod "dimajix/impala"
+mod "dimajix/spark"
 

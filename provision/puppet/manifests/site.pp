@@ -38,17 +38,32 @@ class hadoop_config {
         
     # Modify global Hadoop settings
     class{ "hadoop":
-      hdfs_hostname => 'namenode.localcluster',
-      yarn_hostname => 'namenode.localcluster',
-      slaves => [ 'datanode1.localcluster', 'datanode2.localcluster' ],
-      frontends => [ 'client.localcluster' ],
+      hdfs_hostname => "namenode.${domain}",
+      yarn_hostname => "namenode.${domain}",
+      slaves => [ "datanode1.${domain}", "datanode2.${domain}" ],
+      frontends => [ "client.${domain}" ],
       perform => false,
       # security needs to be disabled explicitly by using empty string
       realm => '',
       properties => {
+        # Please no replication in our virtual dev cluster
         'dfs.replication' => 1,
-        'hadoop.proxyuser.hive.groups' => 'hive,users',
+        'hadoop.proxyuser.hive.groups' => 'hive,users,supergroup',
         'hadoop.proxyuser.hive.hosts' => '*',
+        # Setup zookeeper for hbase, otherwise it won't work in Hadoop
+        'hbase.zookeeper.quorum' => "zookeeper1.${domain}",
+        # Limit CPU usage
+        'yarn.nodemanager.resource.cpu-vcores' => '4',
+        # Enable log aggregation
+        'yarn.log-aggregation-enable' => 'true',
+        # Turn off security
+        'dfs.namenode.acls.enabled' => 'false',
+        'dfs.permissions.enabled' => 'false',
+        # Enable shortcircuit reads for impala
+        'dfs.client.read.shortcircuit' => 'true',
+        'dfs.domain.socket.path' => '/var/lib/hadoop-hdfs/dn_socket',
+        'dfs.client.file-block-storage-locations.timeout.millis' => '10000',
+        'dfs.datanode.hdfs-blocks-metadata.enabled' => 'true'
       } 
     }
 
@@ -71,14 +86,14 @@ class hive_config {
 
     # Modify global Hive settings
     class { "hive":
-      hdfs_hostname => 'namenode.localcluster',
-      metastore_hostname => 'hivenode.localcluster',
-      server2_hostname => 'hivenode.localcluster',
+      hdfs_hostname => "namenode.${domain}",
+      metastore_hostname => "hivenode.${domain}",
+      server2_hostname => "hivenode.${domain}",
       # security needs to be disabled explicitly by using empty string
       realm => '',
       features  => { },
       db        => 'mysql',
-      db_host   => 'mysql.localcluster',
+      db_host   => 'mysql.${domain}',
       db_name   => 'hive',
       db_user   => 'hive',
       db_password => 'hivepassword',
@@ -91,17 +106,29 @@ class hbase_config {
     include hadoop_config
     
     class { "hbase":
-      hdfs_hostname => 'namenode.localcluster',
-      master_hostname => 'hbasenode.localcluster',
-      zookeeper_hostnames => [ 'zookeeper1.localcluster' ],  
+      hdfs_hostname => "namenode.${domain}",
+      master_hostname => "hbasenode.${domain}",
+      zookeeper_hostnames => [ "zookeeper1.${domain}" ],  
       external_zookeeper => true,    
-      slaves => [ 'datanode1.localcluster', 'datanode2.localcluster' ],
-      frontends => [ 'client.localcluster' ],
+      slaves => [ "datanode1.${domain}", "datanode2.${domain}" ],
+      frontends => [ "client.${domain}" ],
       perform => false,
       realm => '',
       features  => { },
     }
     Class['java'] -> Class['hbase']
+}
+
+
+class impala_config {
+    include hadoop_config
+    include hbase_config
+    include hive_config
+    
+    class { "impala":
+      catalog_hostname => "hivenode.${domain}",
+      statestore_hostname => "hivenode.${domain}"
+    }
 }
 
 
@@ -118,16 +145,24 @@ node 'namenode' {
 node 'hivenode' {
   include hive_config
   include hadoop_config
+  include impala_config
   # Hive Server
   include hive::metastore
   include hive::server2
   # Hive HDFS dependency
   include hive::hdfs
+
+  # Impala catalog
+  include impala::catalog
+  # Impala statestore
+  include impala::statestore
   
   Class['mysql::bindings'] ->
   Class['hadoop::common::config'] -> 
   Class['hive::metastore'] ->
-  Class['hive::server2']
+  Class['hive::server2'] ->
+  Class['impala::catalog'] ->
+  Class['impala::statestore']
 }
 
 node 'hbasenode' {
@@ -153,6 +188,8 @@ node 'client' {
   include hive_config
   include hbase_config
   include hadoop_config
+  include impala_config
+
   # client
   include hadoop::frontend
   # Hive client
@@ -162,22 +199,29 @@ node 'client' {
   include hbase::frontend
   # mysql client
   include mysql::client
+  # Impala client
+  include impala::frontend
 }
 
 node /datanode[1-9]/ {
   include hadoop_config
   include hbase_config
+  include impala_config
+
   # slave (HDFS)
   include hadoop::datanode
   # slave (YARN)
   include hadoop::nodemanager
   # hbase slave
   include hbase::regionserver
+  # Impala server
+  include impala::server
 
   Class['hadoop::common::config'] -> 
   Class['hadoop::datanode'] ->
   Class['hadoop::nodemanager'] ->
-  Class['hbase::regionserver']
+  Class['hbase::regionserver'] ->
+  Class['impala::server'] ->
 }
 
 node /zookeeper[1-9]/ {

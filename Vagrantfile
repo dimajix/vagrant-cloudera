@@ -17,6 +17,7 @@ boxes = [
 ]
 
 
+DOMAIN = 'cloudera.vagrant'
 LXC_BRIDGE = 'lxcbr0'
 AWS_REGION = ''
 AWS_AMI = ''
@@ -33,7 +34,7 @@ Vagrant.configure("2") do |config|
 
   boxes.each do |opts|
   	config.vm.define opts[:name] do |node|
-      node.vm.hostname = "%s.localcluster" % opts[:name].to_s
+      node.vm.hostname = "%s.%s" % [opts[:name].to_s, DOMAIN]
   	  node.vm.box = "trusty64"
       node.vm.box_url = "http://files.vagrantup.com/trusty64.box"
       

@@ -4,6 +4,7 @@
 PUPPET_DIR=/vagrant/provision/puppet
 
 apt-get update
+apt-get --yes --force-yes upgrade
 apt-get --yes --force-yes install puppet rubygems-integration
 
  

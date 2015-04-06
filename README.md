@@ -38,14 +38,14 @@ Note that depending on your Vagrant provisioner and the environment, the IP addr
 
 The following virtual machines will be provided:
 
-    namenode.localcluster   - Hadoop Namenode, Historytracker, YARN Resourcemanager
-    datanode1.localcluster  - Hadoop Datanode, YARN Nodemanager
-    datanode2.localcluster  - Hadoop Datanode, YARN Nodemanager
-    zookeeper1.localcluster - Zookeeper Node
-    hivenode.localcluster   - Hadoop Hive server and MetaStore server
-    hbasenode.localcluster  - Hadoop HBase master server
-    mysql.localcluster      - MySQL server (root password is 1234)
-    client.localcluster     - Client machine which should be used to access all services
+    namenode.cloudera.vagrant   - Hadoop Namenode, Historytracker, YARN Resourcemanager
+    datanode1.cloudera.vagrant  - Hadoop Datanode, YARN Nodemanager
+    datanode2.cloudera.vagrant  - Hadoop Datanode, YARN Nodemanager
+    zookeeper1.cloudera.vagrant - Zookeeper Node
+    hivenode.cloudera.vagrant   - Hadoop Hive server and MetaStore server
+    hbasenode.cloudera.vagrant  - Hadoop HBase master server
+    mysql.cloudera.vagrant      - MySQL server (root password is 1234)
+    client.cloudera.vagrant     - Client machine which should be used to access all services
     
 You can ssh into any of the machines using `vagrant` by typing
 
@@ -58,14 +58,22 @@ where `nodename` is one of `namenode`, `datanode1`, `datanode2`, `mysql` or `cli
 
 Hadoop will make some web interfaces available to the host machine.
 
-    http://namenode.localcluster:50070
-    http://datanode1.localcluster:50075/
-    http://datanode2.localcluster:50075/
+    http://namenode.cloudera.vagrant:50070
+    http://namenode.cloudera.vagrant:8088
+    http://namenode.cloudera.vagrant:19888
+    http://datanode1.cloudera.vagrant:50075/
+    http://datanode2.cloudera.vagrant:50075/
 
 HBase services are also accessible at
-    http://hbasenode.localcluster:60010
-    http://datanode1.localcluster:60030
-    http://datanode2.localcluster:60030
+    http://hbasenode.cloudera.vagrant:60010
+    http://datanode1.cloudera.vagrant:60030
+    http://datanode2.cloudera.vagrant:60030
+
+Imapala services are accessible at
+    http://hivenode.cloudera.vagrant:25010
+    http://hivenode.cloudera.vagrant:25020
+    http://datanode1.cloudera.vagrant:25000
+    http://datanode2.cloudera.vagrant:25000
 
 # Issues
 

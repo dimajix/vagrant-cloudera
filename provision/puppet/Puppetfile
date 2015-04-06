@@ -11,5 +11,6 @@ mod "cesnet/hadoop"
 mod "cesnet/hbase"
 mod "cesnet/hive"
 mod "cesnet/zookeeper"
-mod "kupferk/osfixes"
+mod "dimajix/osfixes"
+mod "dimajix/impala"
 

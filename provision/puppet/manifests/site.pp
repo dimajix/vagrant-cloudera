@@ -6,16 +6,16 @@ package {ruby:ensure=> [latest,installed]}
 
 
 # Configure Cloudera repositories
-stage { 'repo_init':
+stage { 'init':
   before => Stage['main'],  
 }
 class { '::cloudera::cdh5::repo':
   version   => '5.3.1',
-  stage => repo_init
+  stage => init
 }
 class { '::cloudera::cm5::repo':
   version   => '5.3.1',
-  stage => repo_init
+  stage => init
 }
 class { '::osfixes::ubuntu::hosts':
   stage => init

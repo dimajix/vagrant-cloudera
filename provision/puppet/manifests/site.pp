@@ -191,17 +191,6 @@ node 'hbasenode' {
 }
 
 
-node 'sparknode' {
-  include hadoop_config
-  include spark_config
-  # Spark master
-  include spark::master
-
-  Class['hadoop::common::config'] -> 
-  Class['spark::master']
-}
-
-
 node 'client' {
   include hive_config
   include hbase_config
@@ -237,7 +226,6 @@ node /datanode[1-9]/ {
   include hadoop_config
   include hbase_config
   include impala_config
-  include spark_config
 
   # slave (HDFS)
   include hadoop::datanode
@@ -247,14 +235,11 @@ node /datanode[1-9]/ {
   include hbase::regionserver
   # Impala server
   include impala::server
-  # Spark worker
-  include spark::worker
 
   Class['hadoop::common::config'] -> 
   Class['hadoop::datanode'] ->
   Class['hadoop::nodemanager'] ->
   Class['hbase::regionserver'] ->
-  Class['spark::worker'] ->
   Class['impala::server']
 }
 

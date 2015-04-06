@@ -21,21 +21,17 @@ class { '::osfixes::ubuntu::hosts':
   stage => init
 }
 
-
-class java_config {
-    # Make sure Java is installed on hosts, select specific version
-    class { 'java':
-        distribution => 'jre'
-    } 
-}
+# Make sure Java is installed on hosts, select specific version
+class { 'java':
+  distribution => 'jre',
+  stage => init
+} 
 
 
 # Put global Hadoop configuration into a dedicated class, which will
 # be included by relevant nodes. This way only nodes which need Hadoop
 # will get Hadoop and its dependencies.
 class hadoop_config {
-    include java_config
-        
     # Modify global Hadoop settings
     class{ "hadoop":
       hdfs_hostname => "namenode.${domain}",
@@ -98,7 +94,6 @@ class hive_config {
       db_user   => 'hive',
       db_password => 'hivepassword',
     }
-    Class['java'] -> Class['hive']
 }
 
 
@@ -116,7 +111,6 @@ class hbase_config {
       realm => '',
       features  => { },
     }
-    Class['java'] -> Class['hbase']
 }
 
 
@@ -228,6 +222,14 @@ node 'client' {
   include impala::frontend
   # Spark client
   include spark::frontend
+
+  Class['hadoop::common::config'] -> 
+  Class['hadoop::frontend'] ->
+  Class['hive::frontend'] ->
+  Class['hive::hcatalog'] ->
+  Class['hbase::frontend'] ->
+  Class['impala::frontend'] ->
+  Class['spark::frontend']
 }
 
 
@@ -282,6 +284,9 @@ node mysql {
     grant    => ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
     sql      => '/usr/lib/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql',
   }
-  Class['hive::frontend'] -> Mysql::Db['hive']
+  
+  Class['java'] ->
+  Class['hive::frontend'] -> 
+  Mysql::Db['hive']
 }
 

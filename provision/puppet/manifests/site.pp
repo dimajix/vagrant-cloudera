@@ -221,7 +221,7 @@ node /datanode[1-9]/ {
   Class['hadoop::datanode'] ->
   Class['hadoop::nodemanager'] ->
   Class['hbase::regionserver'] ->
-  Class['impala::server'] ->
+  Class['impala::server']
 }
 
 node /zookeeper[1-9]/ {

@@ -85,6 +85,7 @@ class hive_config {
       hdfs_hostname => "namenode.${domain}",
       metastore_hostname => "hivenode.${domain}",
       server2_hostname => "hivenode.${domain}",
+      zookeeper_hostnames => [ "zookeeper1.${domain}" ],  
       # security needs to be disabled explicitly by using empty string
       realm => '',
       features  => { },
@@ -130,8 +131,7 @@ class spark_config {
     include hadoop_config
     
     class { "spark": 
-      master_hostname => "sparknode.${domain}",
-      workers => [ "datanode1.${domain}", "datanode2.${domain}" ]
+      yarn_namenode => "namenode.${domain}"
     }
 }
 

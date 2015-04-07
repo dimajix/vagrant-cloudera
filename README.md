@@ -74,11 +74,6 @@ Imapala services are accessible at
     http://hivenode.cloudera.vagrant:25020
     http://datanode1.cloudera.vagrant:25000
     http://datanode2.cloudera.vagrant:25000
-    
-Spark services are accessubla at
-    http://sparknode.cloudera.vagrant:18080
-    http://datanode1.cloudera.vagrant:18081
-    http://datanode2.cloudera.vagrant:18081
 
 # Issues
 

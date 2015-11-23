@@ -284,10 +284,10 @@ node 'client' {
     manage_gunicorn => false
   }
 
-  # Install some more packages, needed by Isban software
-  package {'mysql-devel': ensure=> [latest,installed]}
+  # Install some more packages, needed for development
+  package {'libmysqlclient-dev': ensure=> [latest,installed]}
   package {'pig': ensure=> [latest,installed]}
-  package {'gcc-c++': ensure=> [latest,installed]}
+  package {'g++': ensure=> [latest,installed]}
   package {'sqoop': ensure=> [latest,installed]}
 
   Class['hadoop::common::config'] -> 

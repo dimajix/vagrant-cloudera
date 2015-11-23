@@ -21,11 +21,12 @@ class { '::osfixes::ubuntu::hosts':
   stage => init
 }
 
-# Make sure Java is installed on hosts, select specific version
-class { 'java':
-  distribution => 'jre',
-  stage => init
-} 
+class java_config {
+    # Make sure Java is installed on hosts, select specific version
+    class { 'java':
+        distribution => 'jre'
+    } 
+}
 
 class mysql_config {
     class { 'mysql::bindings':
@@ -165,6 +166,15 @@ class spark_config {
         'spark.executor.extraLibraryPath' => '/usr/lib/hadoop/lib/native',
         'spark.yarn.am.extraLibraryPath' => '/usr/lib/hadoop/lib/native'
       }
+    }
+}
+
+
+class kafka_config {
+    include java_config
+
+    class { "kafka": 
+      install_java => false,
     }
 }
 

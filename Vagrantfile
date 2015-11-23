@@ -17,8 +17,8 @@ boxes = [
   { :name => :zeppelin, :ip => '10.110.55.70', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
 ]
 
-
-DOMAIN = 'cloudera.vagrant'
+BASE_NAME = 'cloudera'
+DOMAIN_NAME = "%s.vagrant" % BASE_NAME
 LXC_BRIDGE = 'lxcbr0'
 AWS_REGION = ''
 AWS_AMI = ''
@@ -35,12 +35,14 @@ Vagrant.configure("2") do |config|
 
   boxes.each do |opts|
   	config.vm.define opts[:name] do |node|
-      node.vm.hostname = "%s.%s" % [opts[:name].to_s, DOMAIN]
+      node.vm.hostname = "%s.%s" % [opts[:name].to_s, DOMAIN_NAME]
   	  node.vm.box = "trusty64"
       node.vm.box_url = "http://files.vagrantup.com/trusty64.box"
 
-      # Also setup aliases for /etc/hosts with and without domainname
-      node.hostmanager.aliases = [opts[:name].to_s]
+      if Vagrant.has_plugin?("vagrant-hostmanager")
+        # Also setup aliases for /etc/hosts with and without domainname
+        node.hostmanager.aliases = [opts[:name].to_s]
+      end
       
       node.vm.provider :aws do |aws, override|
         override.vm.box = "dummy"
@@ -58,7 +60,7 @@ Vagrant.configure("2") do |config|
       
       node.vm.provider :virtualbox do |vb, override|
         override.vm.network :private_network, ip: opts[:ip]
-        vb.name = "cloudera.%s" % opts[:name].to_s
+        vb.name = "%s.%s" % [BASE_NAME,opts[:name].to_s]
         vb.customize ["modifyvm", :id, "--memory", opts[:memory]]
         vb.customize ["modifyvm", :id, "--cpus", opts[:cpus] ] if opts[:cpus]
       end
@@ -67,7 +69,7 @@ Vagrant.configure("2") do |config|
       	override.vm.box = "fgrehm/trusty64-lxc"
    	    override.vm.box_url = "https://atlas.hashicorp.com/fgrehm/boxes/trusty64-lxc/versions/1.2.0/providers/lxc.box"
         # override.vm.network :private_network, ip: opts[:ip], lxc__bridge_name: LXC_BRIDGE
-        lxc.container_name = "cloudera.%s" % opts[:name].to_s
+        lxc.container_name = "%s.%s" % [BASE_NAME,opts[:name].to_s]
         # lxc.customize 'cgroup.memory.limit_in_bytes', opts[:memory].to_s + "M"
         lxc.customize 'network.type', 'veth'
         lxc.customize 'network.link', LXC_BRIDGE

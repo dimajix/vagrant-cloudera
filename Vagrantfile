@@ -11,10 +11,10 @@ boxes = [
   { :name => :datanode2, :ip => '10.110.55.42', :cpus =>4, :memory => 4096, :instance => 'm1.medium' },
   { :name => :hbasenode, :ip => '10.110.55.45', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
   { :name => :hivenode, :ip => '10.110.55.46', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
-  { :name => :sparknode, :ip => '10.110.55.46', :cpus =>1, :memory => 512, :instance => 'm1.small' },
   { :name => :client, :ip => '10.110.55.46', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
   { :name => :mysql, :ip => '10.110.55.50', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
   { :name => :zookeeper1, :ip => '10.110.55.60', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
+  { :name => :zeppelin, :ip => '10.110.55.70', :cpus =>1, :memory => 1024, :instance => 'm1.small' },
 ]
 
 
@@ -38,6 +38,9 @@ Vagrant.configure("2") do |config|
       node.vm.hostname = "%s.%s" % [opts[:name].to_s, DOMAIN]
   	  node.vm.box = "trusty64"
       node.vm.box_url = "http://files.vagrantup.com/trusty64.box"
+
+      # Also setup aliases for /etc/hosts with and without domainname
+      node.hostmanager.aliases = [opts[:name].to_s]
       
       node.vm.provider :aws do |aws, override|
         override.vm.box = "dummy"

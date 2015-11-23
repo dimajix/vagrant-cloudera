@@ -10,11 +10,11 @@ stage { 'init':
   before => Stage['main'],  
 }
 class { '::cloudera::cdh5::repo':
-  version   => '5.3.2',
+  version   => '5.4.8',
   stage => init
 }
 class { '::cloudera::cm5::repo':
-  version   => '5.3.2',
+  version   => '5.4.8',
   stage => init
 }
 class { '::osfixes::ubuntu::hosts':
@@ -27,17 +27,26 @@ class { 'java':
   stage => init
 } 
 
+class mysql_config {
+    class { 'mysql::bindings':
+      java_enable => true,
+    }
+}
+
 
 # Put global Hadoop configuration into a dedicated class, which will
 # be included by relevant nodes. This way only nodes which need Hadoop
 # will get Hadoop and its dependencies.
 class hadoop_config {
+    include java_config
+
     # Modify global Hadoop settings
     class{ "hadoop":
       hdfs_hostname => "namenode.${domain}",
       yarn_hostname => "namenode.${domain}",
       slaves => [ "datanode1.${domain}", "datanode2.${domain}" ],
       frontends => [ "client.${domain}" ],
+      features => { 'aggregation' => 1 },
       perform => false,
       # security needs to be disabled explicitly by using empty string
       realm => '',
@@ -46,12 +55,26 @@ class hadoop_config {
         'dfs.replication' => 1,
         'hadoop.proxyuser.hive.groups' => 'hive,users,supergroup',
         'hadoop.proxyuser.hive.hosts' => '*',
+        'hadoop.proxyuser.oozie.groups' => '*',
+        'hadoop.proxyuser.oozie.hosts'  => '*',
         # Setup zookeeper for hbase, otherwise it won't work in Hadoop
         'hbase.zookeeper.quorum' => "zookeeper1.${domain}",
         # Limit CPU usage
         'yarn.nodemanager.resource.cpu-vcores' => '4',
         # Enable log aggregation
         'yarn.log-aggregation-enable' => 'true',
+        'yarn.log.server.url' => 'http://${yarn.timeline-service.webapp.address}/jobhistory/logs',
+        'yarn.timeline-service.enabled' => 'true',
+        'yarn.timeline-service.hostname' => "namenode.${domain}",
+        'yarn.timeline-service.generic-application-history.enabled' => 'true',
+        'yarn.timeline-service.address' => '${yarn.timeline-service.hostname}:10200',
+        'yarn.timeline-service.webapp.address' => '${yarn.timeline-service.hostname}:19888',
+        # Enable Job History Server
+        'mapreduce.jobhistory.address' => "namenode.${domain}:10020",
+        'mapreduce.jobhistory.webapp.address' => "namenode.${domain}:19888",
+        # Enable external shuffle service (for Spark)
+        'yarn.nodemanager.aux-services' => 'spark_shuffle,mapreduce_shuffle',
+        'yarn.nodemanager.aux-services.spark_shuffle.class' => 'org.apache.spark.network.yarn.YarnShuffleService',
         # Turn off security
         'dfs.namenode.acls.enabled' => 'false',
         'dfs.permissions.enabled' => 'false',
@@ -74,12 +97,9 @@ class hadoop_config {
 
 
 class hive_config {
+    include mysql_config
     include hadoop_config
     
-    class { 'mysql::bindings':
-      java_enable => true,
-    }
-
     # Modify global Hive settings
     class { "hive":
       hdfs_hostname => "namenode.${domain}",
@@ -94,6 +114,7 @@ class hive_config {
       db_user   => 'hive',
       db_password => 'hivepassword',
     }
+    Class['java'] -> Class['hive']
 }
 
 
@@ -111,6 +132,7 @@ class hbase_config {
       realm => '',
       features  => { },
     }
+    Class['java'] -> Class['hbase']
 }
 
 
@@ -130,14 +152,25 @@ class spark_config {
     include hadoop_config
     
     class { "spark": 
-      master_hostname => "sparknode.${domain}",
-      workers => [ "datanode1.${domain}", "datanode2.${domain}" ]
+      yarn_namenode => "namenode.${domain}",
+      properties => {
+        'spark.eventLog.dir' => "hdfs://namenode.${domain}/user/spark/applicationHistory",
+        'spark.eventLog.enabled' => 'true',
+        'spark.serializer' => 'org.apache.spark.serializer.KryoSerializer',
+        'spark.shuffle.service.enabled' => 'true',
+        'spark.shuffle.service.port' => '7337',
+        'spark.yarn.historyServer.address' => "http://namenode.${domain}:19888",
+        'spark.driver.extraLibraryPath' => '/usr/lib/hadoop/lib/native',
+        'spark.executor.extraLibraryPath' => '/usr/lib/hadoop/lib/native',
+        'spark.yarn.am.extraLibraryPath' => '/usr/lib/hadoop/lib/native'
+      }
     }
 }
 
 
 node 'namenode' {
   include hadoop_config
+  include spark_config
   # HDFS
   include hadoop::namenode
   # YARN
@@ -191,14 +224,21 @@ node 'hbasenode' {
 }
 
 
-node 'sparknode' {
+node 'zeppelin' {
+  include hive_config
+  include hbase_config
   include hadoop_config
   include spark_config
-  # Spark master
-  include spark::master
 
-  Class['hadoop::common::config'] -> 
-  Class['spark::master']
+  # Hadoop client
+  include hadoop::frontend
+  # Hive client
+  include hive::frontend
+  include hive::hcatalog
+  # HBase client
+  include hbase::frontend
+  # mysql client
+  include mysql::client
 }
 
 
@@ -222,6 +262,22 @@ node 'client' {
   include impala::frontend
   # Spark client
   include spark::frontend
+
+  # Install python for scripting
+  class { 'python':
+    version    => 'system',
+    pip        => present,
+    dev        => present,
+    virtualenv => present,
+    gunicorn   => absent,
+    manage_gunicorn => false
+  }
+
+  # Install some more packages, needed by Isban software
+  package {'mysql-devel': ensure=> [latest,installed]}
+  package {'pig': ensure=> [latest,installed]}
+  package {'gcc-c++': ensure=> [latest,installed]}
+  package {'sqoop': ensure=> [latest,installed]}
 
   Class['hadoop::common::config'] -> 
   Class['hadoop::frontend'] ->
@@ -248,19 +304,21 @@ node /datanode[1-9]/ {
   # Impala server
   include impala::server
   # Spark worker
-  include spark::worker
+  include spark::common
 
   Class['hadoop::common::config'] -> 
   Class['hadoop::datanode'] ->
   Class['hadoop::nodemanager'] ->
   Class['hbase::regionserver'] ->
-  Class['spark::worker'] ->
   Class['impala::server']
 }
 
 
 node /zookeeper[1-9]/ {
+  include java_config
   class { 'zookeeper': hostnames => [ $::fqdn ],  realm => '' }
+  Class['java'] ->
+  Class['zookeeper']
 }
 
 

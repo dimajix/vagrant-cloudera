@@ -5,7 +5,7 @@ PUPPET_DIR=/vagrant/provision/puppet
 
 apt-get update
 apt-get --yes --force-yes upgrade
-apt-get --yes --force-yes install puppet rubygems-integration
+apt-get --yes --force-yes install puppet rubygems-integration unzip
 
  
 if [ "$(gem search -i librarian-puppet)" = "false" ]; then

@@ -45,6 +45,7 @@ The following virtual machines will be provided:
     hivenode.cloudera.vagrant   - Hadoop Hive server and MetaStore server
     hbasenode.cloudera.vagrant  - Hadoop HBase master server
     mysql.cloudera.vagrant      - MySQL server (root password is 1234)
+    zeppelin.cloudera.vagrant   - Apache Zeppelin (currently needs manual build and start)
     client.cloudera.vagrant     - Client machine which should be used to access all services
     
 You can ssh into any of the machines using `vagrant` by typing
@@ -74,6 +75,17 @@ Imapala services are accessible at
     http://hivenode.cloudera.vagrant:25020
     http://datanode1.cloudera.vagrant:25000
     http://datanode2.cloudera.vagrant:25000
+    
+Zeppelin is available at:
+    http://zeppelin.isban.vagrant:8080 
+
+# Supplied scripts
+
+You will find some helper scripts inside the containers in `/vagrant/scripts`. These may help you getting some testing data etc.
+
+## install-zeppelin.sh
+
+This script is used for downloading and building Apache Zeppelin. You should run this script once on the zeppelin node in order to get that feature enabled. Currently you still need to start Zeppelin manually every time the virtual machine is restartet (see Zeppelin README for more details).
 
 # Issues
 

@@ -10,17 +10,16 @@ stage { 'init':
   before => Stage['main'],  
 }
 class { '::cloudera::cdh5::repo':
-  version   => '5.3.2',
+  version   => '5.4.8',
   stage => init
 }
 class { '::cloudera::cm5::repo':
-  version   => '5.3.2',
+  version   => '5.4.8',
   stage => init
 }
 class { '::osfixes::ubuntu::hosts':
   stage => init
 }
-
 
 class java_config {
     # Make sure Java is installed on hosts, select specific version
@@ -29,19 +28,26 @@ class java_config {
     } 
 }
 
+class mysql_config {
+    class { 'mysql::bindings':
+      java_enable => true,
+    }
+}
+
 
 # Put global Hadoop configuration into a dedicated class, which will
 # be included by relevant nodes. This way only nodes which need Hadoop
 # will get Hadoop and its dependencies.
 class hadoop_config {
     include java_config
-        
+
     # Modify global Hadoop settings
     class{ "hadoop":
       hdfs_hostname => "namenode.${domain}",
       yarn_hostname => "namenode.${domain}",
       slaves => [ "datanode1.${domain}", "datanode2.${domain}" ],
       frontends => [ "client.${domain}" ],
+      features => { 'aggregation' => 1 },
       perform => false,
       # security needs to be disabled explicitly by using empty string
       realm => '',
@@ -50,12 +56,26 @@ class hadoop_config {
         'dfs.replication' => 1,
         'hadoop.proxyuser.hive.groups' => 'hive,users,supergroup',
         'hadoop.proxyuser.hive.hosts' => '*',
+        'hadoop.proxyuser.oozie.groups' => '*',
+        'hadoop.proxyuser.oozie.hosts'  => '*',
         # Setup zookeeper for hbase, otherwise it won't work in Hadoop
         'hbase.zookeeper.quorum' => "zookeeper1.${domain}",
         # Limit CPU usage
         'yarn.nodemanager.resource.cpu-vcores' => '4',
         # Enable log aggregation
         'yarn.log-aggregation-enable' => 'true',
+        'yarn.log.server.url' => 'http://${yarn.timeline-service.webapp.address}/jobhistory/logs',
+        'yarn.timeline-service.enabled' => 'true',
+        'yarn.timeline-service.hostname' => "namenode.${domain}",
+        'yarn.timeline-service.generic-application-history.enabled' => 'true',
+        'yarn.timeline-service.address' => '${yarn.timeline-service.hostname}:10200',
+        'yarn.timeline-service.webapp.address' => '${yarn.timeline-service.hostname}:19888',
+        # Enable Job History Server
+        'mapreduce.jobhistory.address' => "namenode.${domain}:10020",
+        'mapreduce.jobhistory.webapp.address' => "namenode.${domain}:19888",
+        # Enable external shuffle service (for Spark)
+        'yarn.nodemanager.aux-services' => 'spark_shuffle,mapreduce_shuffle',
+        'yarn.nodemanager.aux-services.spark_shuffle.class' => 'org.apache.spark.network.yarn.YarnShuffleService',
         # Turn off security
         'dfs.namenode.acls.enabled' => 'false',
         'dfs.permissions.enabled' => 'false',
@@ -78,17 +98,15 @@ class hadoop_config {
 
 
 class hive_config {
+    include mysql_config
     include hadoop_config
     
-    class { 'mysql::bindings':
-      java_enable => true,
-    }
-
     # Modify global Hive settings
     class { "hive":
       hdfs_hostname => "namenode.${domain}",
       metastore_hostname => "hivenode.${domain}",
       server2_hostname => "hivenode.${domain}",
+      zookeeper_hostnames => [ "zookeeper1.${domain}" ],  
       # security needs to be disabled explicitly by using empty string
       realm => '',
       features  => { },
@@ -132,8 +150,38 @@ class impala_config {
 }
 
 
+class spark_config {
+    include hadoop_config
+    
+    class { "spark": 
+      yarn_namenode => "namenode.${domain}",
+      properties => {
+        'spark.eventLog.dir' => "hdfs://namenode.${domain}/user/spark/applicationHistory",
+        'spark.eventLog.enabled' => 'true',
+        'spark.serializer' => 'org.apache.spark.serializer.KryoSerializer',
+        'spark.shuffle.service.enabled' => 'true',
+        'spark.shuffle.service.port' => '7337',
+        'spark.yarn.historyServer.address' => "http://namenode.${domain}:19888",
+        'spark.driver.extraLibraryPath' => '/usr/lib/hadoop/lib/native',
+        'spark.executor.extraLibraryPath' => '/usr/lib/hadoop/lib/native',
+        'spark.yarn.am.extraLibraryPath' => '/usr/lib/hadoop/lib/native'
+      }
+    }
+}
+
+
+class kafka_config {
+    include java_config
+
+    class { "kafka": 
+      install_java => false,
+    }
+}
+
+
 node 'namenode' {
   include hadoop_config
+  include spark_config
   # HDFS
   include hadoop::namenode
   # YARN
@@ -141,6 +189,7 @@ node 'namenode' {
   # MAPRED
   include hadoop::historyserver
 }
+
 
 node 'hivenode' {
   include hive_config
@@ -165,6 +214,7 @@ node 'hivenode' {
   Class['impala::statestore']
 }
 
+
 node 'hbasenode' {
   include hbase_config
   include hadoop_config
@@ -184,11 +234,31 @@ node 'hbasenode' {
   Class['hbase::restserver']
 }
 
+
+node 'zeppelin' {
+  include hive_config
+  include hbase_config
+  include hadoop_config
+  include spark_config
+
+  # Hadoop client
+  include hadoop::frontend
+  # Hive client
+  include hive::frontend
+  include hive::hcatalog
+  # HBase client
+  include hbase::frontend
+  # mysql client
+  include mysql::client
+}
+
+
 node 'client' {
   include hive_config
   include hbase_config
   include hadoop_config
   include impala_config
+  include spark_config
 
   # client
   include hadoop::frontend
@@ -201,12 +271,40 @@ node 'client' {
   include mysql::client
   # Impala client
   include impala::frontend
+  # Spark client
+  include spark::frontend
+
+  # Install python for scripting
+  class { 'python':
+    version    => 'system',
+    pip        => present,
+    dev        => present,
+    virtualenv => present,
+    gunicorn   => absent,
+    manage_gunicorn => false
+  }
+
+  # Install some more packages, needed for development
+  package {'libmysqlclient-dev': ensure=> [latest,installed]}
+  package {'pig': ensure=> [latest,installed]}
+  package {'g++': ensure=> [latest,installed]}
+  package {'sqoop': ensure=> [latest,installed]}
+
+  Class['hadoop::common::config'] -> 
+  Class['hadoop::frontend'] ->
+  Class['hive::frontend'] ->
+  Class['hive::hcatalog'] ->
+  Class['hbase::frontend'] ->
+  Class['impala::frontend'] ->
+  Class['spark::frontend']
 }
+
 
 node /datanode[1-9]/ {
   include hadoop_config
   include hbase_config
   include impala_config
+  include spark_config
 
   # slave (HDFS)
   include hadoop::datanode
@@ -216,6 +314,8 @@ node /datanode[1-9]/ {
   include hbase::regionserver
   # Impala server
   include impala::server
+  # Spark worker
+  include spark::common
 
   Class['hadoop::common::config'] -> 
   Class['hadoop::datanode'] ->
@@ -224,9 +324,14 @@ node /datanode[1-9]/ {
   Class['impala::server']
 }
 
+
 node /zookeeper[1-9]/ {
+  include java_config
   class { 'zookeeper': hostnames => [ $::fqdn ],  realm => '' }
+  Class['java'] ->
+  Class['zookeeper']
 }
+
 
 node mysql {
   include hive_config
@@ -248,6 +353,9 @@ node mysql {
     grant    => ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
     sql      => '/usr/lib/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql',
   }
-  Class['hive::frontend'] -> Mysql::Db['hive']
+  
+  Class['java'] ->
+  Class['hive::frontend'] -> 
+  Mysql::Db['hive']
 }
 

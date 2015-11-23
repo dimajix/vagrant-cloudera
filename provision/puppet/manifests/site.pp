@@ -105,6 +105,7 @@ class hive_config {
       hdfs_hostname => "namenode.${domain}",
       metastore_hostname => "hivenode.${domain}",
       server2_hostname => "hivenode.${domain}",
+      zookeeper_hostnames => [ "zookeeper1.${domain}" ],  
       # security needs to be disabled explicitly by using empty string
       realm => '',
       features  => { },

@@ -11,7 +11,7 @@ I only tested the cluster on Ubuntu 14.04 with the `vagrant-lxc` plugin. If you 
 
 For best results, you should also install the Vagrant plugin `vagrant-hostmanager` simply by typing
 
-    vagrant plugin install vagrant-hostmanager
+    vagrant plugin install vagrant-hostmanager --plugin-version=1.5.0
     
 This neat plugin will make sure that every nodein your cluster gets a `hosts` file containing all other nodes of your Vagrant virtual cluster. This way you do not need to have any DNS bindings for your hosts, and you can simply rely on a DHCP server for assigning IP addresses.
 
@@ -98,4 +98,6 @@ The Cloudera Puppet module wants to change the kernel settings for transparent h
 
     echo never > /sys/kernel/mm/transparent_hugepage/defrag
 
+## Errors in /etc/hosts
+Another problem may be due to a newer version of the vagrant-hostmanager plugin. You should use version 1.5.0.
 

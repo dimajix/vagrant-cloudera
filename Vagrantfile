@@ -30,7 +30,8 @@ Vagrant.configure("2") do |config|
     config.hostmanager.enabled = true
     config.hostmanager.manage_host = true
     config.hostmanager.ignore_private_ip = false
-    config.hostmanager.include_offline = true      
+    config.hostmanager.include_offline = true
+    config.hostmanager.aliases_on_separate_lines = false
   end
 
   boxes.each do |opts|

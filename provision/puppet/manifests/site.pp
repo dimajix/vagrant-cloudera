@@ -111,7 +111,7 @@ class hive_config {
       realm => '',
       features  => { },
       db        => 'mysql',
-      db_host   => 'mysql.${domain}',
+      db_host   => "mysql.${domain}",
       db_name   => 'hive',
       db_user   => 'hive',
       db_password => 'hivepassword',
@@ -351,7 +351,7 @@ node mysql {
     password => 'hivepassword',
     host     => '%',
     grant    => ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
-    sql      => '/usr/lib/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql',
+    sql      => '/vagrant/provision/hive/hive-schema-1.1.0.mysql.sql',
   }
   
   Class['java'] ->

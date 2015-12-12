@@ -62,6 +62,13 @@ class hadoop_config {
         'hbase.zookeeper.quorum' => "zookeeper1.${domain}",
         # Limit CPU usage
         'yarn.nodemanager.resource.cpu-vcores' => '4',
+        'yarn.nodemanager.resource.memory-mb' => '8192',
+        'mapreduce.map.memory.mb' => '2048',
+        'mapreduce.reduce.memory.mb' => '4096',
+        'mapreduce.map.java.opts' => '-server -Xmx1536m -Duser.timezone=UTC -Dfile.encoding=UTF-8',
+        'mapreduce.reduce.java.opts' => '-server -Xmx1536m -Duser.timezone=UTC -Dfile.encoding=UTF-8',
+        # Disable resource checks
+        'yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage' => '99',
         # Enable log aggregation
         'yarn.log-aggregation-enable' => 'true',
         'yarn.log.server.url' => 'http://${yarn.timeline-service.webapp.address}/jobhistory/logs',

@@ -62,6 +62,13 @@ class hadoop_config {
         'hbase.zookeeper.quorum' => "zookeeper1.${domain}",
         # Limit CPU usage
         'yarn.nodemanager.resource.cpu-vcores' => '4',
+        'yarn.nodemanager.resource.memory-mb' => '8192',
+        'mapreduce.map.memory.mb' => '2048',
+        'mapreduce.reduce.memory.mb' => '4096',
+        'mapreduce.map.java.opts' => '-server -Xmx1536m -Duser.timezone=UTC -Dfile.encoding=UTF-8',
+        'mapreduce.reduce.java.opts' => '-server -Xmx1536m -Duser.timezone=UTC -Dfile.encoding=UTF-8',
+        # Disable resource checks
+        'yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage' => '99',
         # Enable log aggregation
         'yarn.log-aggregation-enable' => 'true',
         'yarn.log.server.url' => 'http://${yarn.timeline-service.webapp.address}/jobhistory/logs',
@@ -111,7 +118,7 @@ class hive_config {
       realm => '',
       features  => { },
       db        => 'mysql',
-      db_host   => 'mysql.${domain}',
+      db_host   => "mysql.${domain}",
       db_name   => 'hive',
       db_user   => 'hive',
       db_password => 'hivepassword',
@@ -351,7 +358,7 @@ node mysql {
     password => 'hivepassword',
     host     => '%',
     grant    => ['SELECT', 'INSERT', 'UPDATE', 'DELETE'],
-    sql      => '/usr/lib/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql',
+    sql      => '/vagrant/provision/hive/hive-schema-1.1.0.mysql.sql',
   }
   
   Class['java'] ->

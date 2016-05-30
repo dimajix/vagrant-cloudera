@@ -10,11 +10,11 @@ stage { 'init':
   before => Stage['main'],  
 }
 class { '::cloudera::cdh5::repo':
-  version   => '5.4.8',
+  version   => '5.7.0',
   stage => init
 }
 class { '::cloudera::cm5::repo':
-  version   => '5.4.8',
+  version   => '5.7.0',
   stage => init
 }
 class { '::osfixes::ubuntu::hosts':
@@ -159,9 +159,12 @@ class impala_config {
 
 class spark_config {
     include hadoop_config
+    include hive_config
     
     class { "spark": 
-      yarn_namenode => "namenode.${domain}",
+      hdfs_hostname => "namenode.${domain}",
+      historyserver_hostname => "namenode.${domain}",
+      yarn_enable => true,
       properties => {
         'spark.eventLog.dir' => "hdfs://namenode.${domain}/user/spark/applicationHistory",
         'spark.eventLog.enabled' => 'true',
@@ -174,15 +177,18 @@ class spark_config {
         'spark.yarn.am.extraLibraryPath' => '/usr/lib/hadoop/lib/native'
       }
     }
-}
 
-
-class kafka_config {
-    include java_config
-
-    class { "kafka": 
-      install_java => false,
+    # Create Link to Hive config
+    file { '/etc/spark/conf/hive-site.xml':
+      ensure => 'link',
+      target => '/etc/hive/conf/hive-site.xml'
     }
+
+    include spark::common::config
+
+    Class['hive::hcatalog::config'] ->
+    Class['spark::common::config'] ->
+    File['/etc/spark/conf/hive-site.xml']
 }
 
 
